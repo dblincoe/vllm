@@ -85,6 +85,9 @@ class EngineCoreClient(ABC):
     def add_request(self, request: EngineCoreRequest) -> None:
         raise NotImplementedError
 
+    def add_request_batched(self, requests: list[EngineCoreRequest]) -> None:
+        raise NotImplementedError
+
     def profile(self, is_start: bool = True) -> None:
         raise NotImplementedError
 
@@ -138,6 +141,10 @@ class EngineCoreClient(ABC):
         raise NotImplementedError
 
     async def add_request_async(self, request: EngineCoreRequest) -> None:
+        raise NotImplementedError
+
+    async def add_request_batched_async(
+            self, requests: list[EngineCoreRequest]) -> None:
         raise NotImplementedError
 
     async def profile_async(self, is_start: bool = True) -> None:
@@ -203,6 +210,10 @@ class InprocClient(EngineCoreClient):
 
     def add_request(self, request: EngineCoreRequest) -> None:
         self.engine_core.add_request(request)
+
+    def add_request_batched(self, requests: list[EngineCoreRequest]) -> None:
+        for req in requests:
+            self.engine_core.add_request(req)
 
     def abort_requests(self, request_ids: list[str]) -> None:
         if len(request_ids) > 0:
@@ -547,6 +558,12 @@ class SyncMPClient(MPClient):
         request.prompt = None
         self._send_input(EngineCoreRequestType.ADD, request)
 
+    def add_request_batched(self, requests: list[EngineCoreRequest]) -> None:
+        # NOTE: see add_request() above.
+        for request in requests:
+            request.prompt = None
+        self._send_input(EngineCoreRequestType.ADD_BATCHED, requests)
+
     def abort_requests(self, request_ids: list[str]) -> None:
         if len(request_ids) > 0:
             self._send_input(EngineCoreRequestType.ABORT, request_ids)
@@ -695,6 +712,14 @@ class AsyncMPClient(MPClient):
         # tokenized.
         request.prompt = None
         await self._send_input(EngineCoreRequestType.ADD, request)
+        self._ensure_output_queue_task()
+
+    async def add_request_batched_async(
+            self, requests: list[EngineCoreRequest]) -> None:
+        # NOTE: see add_request_async() above.
+        for request in requests:
+            request.prompt = None
+        await self._send_input(EngineCoreRequestType.ADD_BATCHED, requests)
         self._ensure_output_queue_task()
 
     async def abort_requests_async(self, request_ids: list[str]) -> None:
