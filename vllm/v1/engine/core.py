@@ -500,12 +500,11 @@ class EngineCoreProc(EngineCore):
 
                 # Deserialize payload based on request type
                 if request_type == EngineCoreRequestType.ADD:
-                    request = add_request_decoder.decode(data_frame.buffer)
+                    request = add_request_decoder.decode(data_frames)
                 elif request_type == EngineCoreRequestType.ADD_BATCHED:
-                    request = add_batched_request_decoder.decode(
-                        data_frame.buffer)
+                    request = add_batched_request_decoder.decode(data_frames)
                 else:
-                    request = generic_decoder.decode(data_frame.buffer)
+                    request = generic_decoder.decode(data_frames)
 
                 # Push to input queue for core busy loop.
                 self.input_queue.put_nowait((request_type, request))
